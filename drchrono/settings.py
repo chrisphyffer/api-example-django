@@ -40,10 +40,12 @@ INSTALLED_APPS = (
     'drchrono',
     'social_django',
     'rest_framework',
+    'corsheaders',
 )
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -110,22 +112,27 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 
-# TODO: Configure your drchrono.com account's API settings to allow this app access
-# 1) go to https://app.drchrono.com/api-management/
-# 2) Add a new application
-# 3) configure your redirect URL to be http://localhost:8080/complete/drchrono/
-# 3.1) This needs to be an exact match to what the social-auth module expects
-# 3.2) change your hostname if you're using a different way to access this kiosk; by default it'll run on localhost:8080
-# 4) copy your CLIENT_ID and SECRET keys into a file docker/environment. See the example
-# 5) Ask a dev if this doesn't work quickly; these settings can be fiddly, and we'd rather not wast time with them.
+"""
+DR Chrono OAuth2 Connectivity
+"""
+
 SOCIAL_AUTH_DRCHRONO_KEY = os.getenv('SOCIAL_AUTH_CLIENT_ID')
 SOCIAL_AUTH_DRCHRONO_SECRET = os.getenv('SOCIAL_AUTH_SECRET')
-
 
 LOGIN_REDIRECT_URL = '/welcome/'
 LOGIN_URL = 'login/drchrono'
 
 SHELL_PLUS = "ipython"
+
+
+"""
+Developement Purposes
+"""
+CORS_ORIGIN_ALLOW_ALL = True
+
+# The webhook must be in bytes to be processed by your hashing algorithm
+WEBHOOK_SECRET_TOKEN = bytearray("bit5~oy/^22}t,D@&JD;n}Z^}wVZ$", 'utf-8')
+
 
 
 LOGGING = {

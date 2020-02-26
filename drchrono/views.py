@@ -1,5 +1,9 @@
 from django.shortcuts import redirect
 from django.views.generic import TemplateView
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.conf import settings
+
 from social_django.models import UserSocialAuth
 
 from drchrono.endpoints import DoctorEndpoint
@@ -39,6 +43,7 @@ class DoctorWelcome(TemplateView):
         # account probably only has one doctor in it.
         return next(api.list())
 
+    # Django 1.x TemplateView entry point
     def get_context_data(self, **kwargs):
         kwargs = super(DoctorWelcome, self).get_context_data(**kwargs)
         # Hit the API using one of the endpoints just to prove that we can
@@ -47,3 +52,32 @@ class DoctorWelcome(TemplateView):
         kwargs['doctor'] = doctor_details
         return kwargs
 
+# Our webhook will call back this url and give data.
+# OAuth Procedure - Auth server verifies authenticity of app using a `SECRET KEY`
+# Belonging to you, like a user salt.
+import hashlib, hmac
+
+
+def chrono_api_callback(request):
+
+    # TODO: Error catch invalid request parameters and log them.
+    try:
+        callback_message = bytearray(request.GET['msg'], 'utf-8')
+    except:
+        return JsonResponse({})
+
+    secret_token = hmac.new(settings.WEBHOOK_SECRET_TOKEN, callback_message, hashlib.sha256).hexdigest()
+
+    return JsonResponse(
+        {
+            'secret_token': str(secret_token)
+        }
+    )
+
+@csrf_exempt
+def frontend_api_call(request):
+    return JsonResponse(
+        {
+            'success' : True
+        }
+    )

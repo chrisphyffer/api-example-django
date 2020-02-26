@@ -180,6 +180,13 @@ class BaseEndpoint(object):
 class PatientEndpoint(BaseEndpoint):
     endpoint = "patients"
 
+    # List all of this Doctor's patients
+    def list(self, params=None, date=None, start=None, end=None, **kwargs):
+        """
+        List all Patients
+        """
+        pass
+
 
 class AppointmentEndpoint(BaseEndpoint):
     endpoint = "appointments"

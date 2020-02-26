@@ -8,6 +8,8 @@ import views
 
 
 urlpatterns = [
+    url(r'^frontend-api-test/$', views.frontend_api_call, name='frontend_api_call'),
+    url(r'^callback/$', views.chrono_api_callback, name='chrono_api_callback'),
     url(r'^setup/$', views.SetupView.as_view(), name='setup'),
     url(r'^welcome/$', views.DoctorWelcome.as_view(), name='setup'),
     url(r'^admin/', include(admin.site.urls)),
