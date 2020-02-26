@@ -98,7 +98,7 @@ DATABASES = {
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Los_Angeles'
 
 USE_I18N = True
 
@@ -132,7 +132,6 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 # The webhook must be in bytes to be processed by your hashing algorithm
 WEBHOOK_SECRET_TOKEN = bytearray("bit5~oy/^22}t,D@&JD;n}Z^}wVZ$", 'utf-8')
-
 
 
 LOGGING = {

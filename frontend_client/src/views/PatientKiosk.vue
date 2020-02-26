@@ -49,21 +49,24 @@ export default {
 
 
       Axios.post(
-        this.APP_CONFIG.API_URL + "/frontend-api-test/",
-        {} // Parameters
-        //this.interceptorSettings
+        this.APP_CONFIG.API_URL + "/check-in-patient/",
+        {
+          first_name : this.first_name,
+          last_name : this.last_name,
+          ssn : this.ssn
+        },
+        {
+            headers : { 'Content-Type': 'application/json' }
+        }
       )
         .then(result => {
           if (!result.data["success"]) {
-            var error_message = "Something wrong happened.";
-            var title = "";
             error_handler.run(this.$swal, {
-              title: title,
-              description: error_message
+              title: 'Error Checking In',
+              description: result.data['error'] ? result.data['error'] : 'There is an error with checking in patient.'
             });
             return;
           }
-
 
           this.$swal({
             type: "success",
@@ -78,7 +81,7 @@ export default {
         })
 
         .catch(error => {
-          error_handler.run(this.$swal, "PATIENT_SIGN_IN_ERROR");
+          error_handler.run(this.$swal, `PATIENT_SIGN_IN_ERROR: {error}`);
         });
 
     },

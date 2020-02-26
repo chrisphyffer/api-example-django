@@ -1,17 +1,10 @@
 import requests
 import logging
 
-
-class APIException(Exception): pass
-
-
-class Forbidden(APIException): pass
-
-
-class NotFound(APIException): pass
-
-
-class Conflict(APIException): pass
+from drchrono.utils.exceptions import APIException
+from drchrono.utils.exceptions import Forbidden
+from drchrono.utils.exceptions import NotFound
+from drchrono.utils.exceptions import Conflict
 
 
 ERROR_CODES = {
@@ -55,6 +48,8 @@ class BaseEndpoint(object):
     def _url(self, id=""):
         if id:
             id = "/{}".format(id)
+
+        print "{}{}{}".format(self.BASE_URL, self.endpoint, id)
         return "{}{}{}".format(self.BASE_URL, self.endpoint, id)
 
     def _auth_headers(self, kwargs):
@@ -180,12 +175,16 @@ class BaseEndpoint(object):
 class PatientEndpoint(BaseEndpoint):
     endpoint = "patients"
 
-    # List all of this Doctor's patients
     def list(self, params=None, date=None, start=None, end=None, **kwargs):
-        """
-        List all Patients
-        """
-        pass
+        return super(PatientEndpoint, self).list(params, **kwargs)
+
+    def fetch(self, id, params=None, **kwargs):
+        if not id:
+            raise Exception("The Patient ID is required for lookup.")
+        return super(PatientEndpoint, self).fetch(id=id, params=params, **kwargs)
+
+    def update(self, id, params, **kwargs):
+        return super(PatientEndpoint, self)
 
 
 class AppointmentEndpoint(BaseEndpoint):
@@ -207,6 +206,13 @@ class AppointmentEndpoint(BaseEndpoint):
             raise Exception("Must provide either start & end, or date argument")
         return super(AppointmentEndpoint, self).list(params, **kwargs)
 
+    def update(self, id, params, **kwargs):
+        return super(AppointmentEndpoint, self).update(id=id, data=params, **kwargs)
+
+    def fetch(self, id, params=None, **kwargs):
+        if not id:
+            raise Exception("The Appointment ID is required for lookup.")
+        return super(AppointmentEndpoint, self).fetch(id=id, params=params, **kwargs)
 
 class DoctorEndpoint(BaseEndpoint):
     endpoint = "doctors"
