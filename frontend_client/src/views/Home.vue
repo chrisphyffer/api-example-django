@@ -1,7 +1,6 @@
 <template>
   <div>
-      <button class="btn btn-info"><router-link to="/doctor-dashboard">Doctor Dashboard</router-link></button>
-      <button class="btn btn-info"><router-link to="/patient-kiosk">Patient Kiosk</router-link></button>
+    <h1>Please Click on one of the Portals Above</h1>
   </div>
 </template>
 

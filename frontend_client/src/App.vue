@@ -1,9 +1,14 @@
 <template>
   <div id="app" class="container-fluid">
-  <div>
+    <br />
+  <ul class="nav nav-pills nav-justified">
+    <li class="nav-item">
       <button class="btn btn-info"><router-link to="/doctor-dashboard">Doctor Dashboard</router-link></button>
+    </li>
+    <li class="nav-item">
       <button class="btn btn-info"><router-link to="/patient-kiosk">Patient Kiosk</router-link></button>
-  </div>
+    </li>
+  </ul>
     <router-view />
 
   </div>
@@ -11,4 +16,7 @@
 
 <style lang="scss">
 @import "~bootstrap/scss/bootstrap";
+.btn a {
+  color: #FFF !important;
+}
 </style>

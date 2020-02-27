@@ -77,8 +77,11 @@ def fetch_patient(request, patient_id):
     If our Patient has a scheduled appointment, we will look up this patient
     from our list of appointments and change their status to 'Arrived'.
 
-    If patient is not new...then do nothing, that will be an extra feature...
+    The Appointment that is closest to the actual time will be chosen.
+    Appointments X Seconds OLDER than the current time will be pruned
+    and flagged as `No Show`.
 
+    If patient is not new...then do nothing, that will be an extra feature...
 
     This patient could have multiple times scheduled throuhgout the same day.
     A Patient Could Arrive Late. 
@@ -124,13 +127,13 @@ def check_in_patient(request):
         })
 
     try:
-        if params['id']:
+        if 'id' in params:
             patient = api_patient.fetch(id=params['id'])
         else:
             patient = next(api_patient.list(params=params))
     except Exception, e:
         print(e)
-        if params['id']:
+        if 'id' in params:
             patient_name = '#{}'.format(params['id'])
         else:
             patient_name = '{} {}'.format(params['first_name'], params['last_name'])
@@ -203,11 +206,21 @@ def list_appointments(request):
     # Grab Appointments that have not yet been set to 'In Session' / 'Completed' / Etc
     local_db_appointments = Appointment.objects.filter(time_spent_waiting = 0).all()
     for i in range(len(appointments_list)):
+        found_local_db_appt = False
         for local_db_appointment in local_db_appointments:
             if local_db_appointment.appt_id == appointments_list[i]['id']:
                 appointments_list[i]['date_checked_in'] = local_db_appointment.date_checked_in
+                found_local_db_appt = True
                 break
+        
+        if not found_local_db_appt and appointments_list[i]['status'] == 'Checked In':
+            local_appt_db = Appointment()
+            local_appt_db.appt_id = appointments_list[i]['id']
+            # Did not get a response from Chrono Team in regards to date handling, so doing it custom.
+            local_appt_db.date_checked_in = timezone.now()
+            local_appt_db.save()
 
+            appointments_list[i]['date_checked_in'] = local_appt_db.date_checked_in
 
     return JsonResponse(
         {

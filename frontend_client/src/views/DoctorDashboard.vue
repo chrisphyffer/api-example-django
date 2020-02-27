@@ -47,7 +47,8 @@
           <td >
             <div v-if="typeof(appointment.patient) == 'object' && 
                       VALID_SEEABLE_PATIENTS.indexOf(appointment.status) == -1 &&
-                        CLOSED_APPOINTMENTS.indexOf(appointment.status) == -1">
+                        CLOSED_APPOINTMENTS.indexOf(appointment.status) == -1 &&
+                        VALID_PATIENTS.indexOf(appointment.status) != -1">
               <button class="btn btn-success"
                 v-on:click="check_in_patient(appointment.patient, appointment.id)"
               >Check In Patient</button>
@@ -78,8 +79,9 @@ import error_handler from "@/error_handler.js";
 export default {
   data() {
     return {
-      VALID_SEEABLE_PATIENTS: ['Arrived', 'Checked In'],
-      CLOSED_APPOINTMENTS: ['Complete', 'In Session'],
+      VALID_SEEABLE_PATIENTS: ['Arrived', 'Checked In', 'Checked In Online'],
+      CLOSED_APPOINTMENTS: ['Complete', 'In Session', 'In Room'],
+      VALID_PATIENTS: ['Confirmed'],
 
       appointments: [],
 
@@ -175,10 +177,13 @@ export default {
           });
 
           this.fetch_appointment(appointment.id);
+          this.get_total_patient_wait_time();
         })
         .catch(error => {
           console.log(error);
         });
+
+        
     },
 
     fetch_appointment : function(appointment_id) {
