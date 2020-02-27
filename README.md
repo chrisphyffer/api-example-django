@@ -2,15 +2,15 @@
 > 
 > This system has been built with a Vue frontend. 
 > 
-> Requirements (In addition to this Hackathon's dependencies):
-> 1.) Node.JS - NPM
+> Requirements - In addition to this Hackathon's dependencies:
+> * `Node.JS & NPM`
 > 
 > To Deploy:
 > 
-> 1.) simply set up the Django project, run the migrations and set up with the appropriate key.
-> 2.) Head into the `frontend_client` directory. 
-> 3.) Run `$ npm install` to install your node modules.
-> 4.) Run `$ npm run serve` to serve this frontend. The default url is http://localhost:8080.
+> 1. simply set up the Django project, run the migrations and set up with the appropriate key.
+> 2. Head into the `frontend_client` directory. 
+> 3. Run `$ npm install` to install your node modules.
+> 4. Run `$ npm run serve` to serve this frontend. The default url is http://localhost:8080.
 
 
 
