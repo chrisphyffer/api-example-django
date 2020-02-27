@@ -1,6 +1,7 @@
 # PHYFFER
 Phyffer_Chrono_Notes
 .vscode/
+migrations/
 
 .DS_Store
 # Byte-compiled / optimized / DLL files

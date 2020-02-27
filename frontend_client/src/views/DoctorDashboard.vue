@@ -12,7 +12,7 @@
         <br />
         Appointments Scheduled for Today : {{ appointments.length }}
         <br />
-        Average Patient Wait Time Overall : {{ average_patient_wait_time }}
+        Combined Patient Wait Time Since Start : {{ total_patient_wait_time }}
       </div>
     </div>
 
@@ -28,8 +28,8 @@
           <th scope="col">Phone Number</th>
           <th scope="col">Status</th>
           <th scope="col">Time Waiting</th>
-          <th scope="col">Is Walk-In</th>
-          <th scope="col"></th>
+          <th scope="col">Check In</th>
+          <th scope="col">Begin Session</th>
         </tr>
       </thead>
       <tbody>
@@ -43,12 +43,20 @@
           <td v-if="typeof(appointment.patient) == 'object'">{{ appointment.patient.phone }}</td>
           <td>{{ appointment.status }}</td>
           <td>{{ wait_times[appointment.id] }}</td>
-          <td>{{ appointment.is_walk_in }}</td>
           
+          <td >
+            <div v-if="typeof(appointment.patient) == 'object' && 
+                      VALID_SEEABLE_PATIENTS.indexOf(appointment.status) == -1 &&
+                        CLOSED_APPOINTMENTS.indexOf(appointment.status) == -1">
+              <button class="btn btn-success"
+                v-on:click="check_in_patient(appointment.patient, appointment.id)"
+              >Check In Patient</button>
+            </div>
+          </td>
           <td>
-            <div v-if="VALID_SEEABLE_PATIENTS.indexOf(appointment.status) != -1 ">
-              <button
-                class="btn btn-success"
+            <div  v-if="VALID_SEEABLE_PATIENTS.indexOf(appointment.status) != -1 &&
+                        CLOSED_APPOINTMENTS.indexOf(appointment.status) == -1 ">
+              <button class="btn btn-success"
                 v-on:click="begin_appointment(appointment)"
               >Begin Patient Session</button>
             </div>
@@ -71,34 +79,53 @@ export default {
   data() {
     return {
       VALID_SEEABLE_PATIENTS: ['Arrived', 'Checked In'],
+      CLOSED_APPOINTMENTS: ['Complete', 'In Session'],
 
       appointments: [],
 
       //// In the event the same patient is visiting the office,
       //// there will be no need to reconnect to the api and fetch again.
       patient_list: {},
-      average_patient_wait_time: 2999, // In seconds
+      total_patient_wait_time: 1000000, // In seconds
       APP_CONFIG: variables,
 
       wait_times : {}, //// {'appt_id' : x_seconds }
     };
   },
   methods: {
+    get_total_patient_wait_time : function() {
+ 
+      Axios.get(this.APP_CONFIG.API_URL + `/total-wait-time-since-epoch/`)
+        .then(result => {
+          if(result.data['success']) {
+            this.total_patient_wait_time = result.data['total_wait_time'];
+          }
+        })
+    },
     begin_timer: function() {
+      var appointment_updated_date = false;
+      var current_date = false;
+      var wait_time = false;
       setInterval(() => {
-        //new Date() / 1000
-        //Date.parse(appointments[appt].updated_at)
-
-        //Status_transitions...
         for(var appt in this.appointments) {
-          if(this.VALID_SEEABLE_PATIENTS.indexOf(this.appointments[appt].status))
-            continue
+          if(this.VALID_SEEABLE_PATIENTS.indexOf(this.appointments[appt].status) == -1)
+            continue;
+          
+          if(!this.appointments[appt].date_checked_in)
+            continue;
 
-          if(!this.wait_times[this.appointments[appt].id])
+          appointment_updated_date = Math.floor(new Date(this.appointments[appt].date_checked_in).getTime());
+          current_date = new Date().getTime();
+
+          appointment_updated_date /= 1000
+          current_date /= 1000
+          wait_time = Math.floor(current_date - appointment_updated_date)
+          
+          if(!this.wait_times[this.appointments[appt].id]) {
             this.$set(this.wait_times, this.appointments[appt].id, 0);
-          this.$set(this.wait_times, this.appointments[appt].id, 
-                    Math.floor(new Date() / 1000) - Math.floor(new Date(this.appointments[appt].updated_at).getTime() / 1000) );
-          console.log(this.appointments[appt].id, ' ', this.wait_times[this.appointments[appt].id])
+          }
+
+          this.$set(this.wait_times, this.appointments[appt].id, wait_time);
         }
       }, 1000)
     },
@@ -187,8 +214,8 @@ export default {
           }
 
           this.appointments = result.data['appointments'];
-          for(var appt in this.appointments) {
 
+          for(var appt in this.appointments) {
             this.look_up_patient(appt).then(result => {
               this.appointments[result.appt].patient = result.patient;
               this.patient_list[this.appointments.patient] = result.patient;
@@ -223,9 +250,48 @@ export default {
               return
             });
       });
+    },
+
+    check_in_patient: function(patient, appt_id) {
+      console.log(patient);
+      console.log(patient.id, patient.first_name, patient.last_name);
+      Axios.post(
+        this.APP_CONFIG.API_URL + "/check-in-patient/",
+        {
+          id : patient.id
+        },
+        {
+            headers : { 'Content-Type': 'application/json' }
+        }
+      )
+        .then(result => {
+          if (!result.data["success"]) {
+            error_handler.run(this.$swal, {
+              title: 'Error Checking In',
+              description: result.data['error'] ? result.data['error'] : 'There is an error with checking in patient.'
+            });
+            return;
+          }
+
+          this.$swal({
+            type: "success",
+            title: "Patient has been succesfully checked in.",
+            html: `<strong>${patient.first_name} ${patient.last_name}</strong> has been succesfully checked in.`
+            // AUTO CLOSE
+          });
+
+          this.fetch_appointment(appt_id);
+
+        })
+
+        .catch(error => {
+          error_handler.run(this.$swal, `PATIENT_SIGN_IN_ERROR: {error}`);
+        });
     }
   },
   mounted() {
+
+    this.get_total_patient_wait_time();
     this.retrieve_appointments_list();
     
   }

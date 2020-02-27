@@ -1,11 +1,9 @@
 <template>
   <div id="app" class="container-fluid">
-    
-    <div id="nav">
-      <router-link to="/doctor-dashboard">Doctor Dashboard</router-link> | 
-      <router-link to="/patient-kiosk">Patient Kiosk</router-link>
-    </div>
-
+  <div>
+      <button class="btn btn-info"><router-link to="/doctor-dashboard">Doctor Dashboard</router-link></button>
+      <button class="btn btn-info"><router-link to="/patient-kiosk">Patient Kiosk</router-link></button>
+  </div>
     <router-view />
 
   </div>

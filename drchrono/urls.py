@@ -4,9 +4,15 @@ from django.views.generic import TemplateView
 from django.contrib import admin
 admin.autodiscover()
 
+from drchrono.models import Appointment
+admin.site.register(Appointment)
+
 import views
 
 urlpatterns = [
+
+    # Total Time of All Patients Doctor Has seen since the start of this system
+    url(r'^total-wait-time-since-epoch/', views.total_wait_time_since_epoch, name='total_wait_time_since_epoch'),
 
     # Check in the Patient
     url(r'^check-in-patient/', views.check_in_patient, name='check_in_patient'),
