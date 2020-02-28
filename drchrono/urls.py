@@ -8,7 +8,6 @@ from drchrono.views import appointment
 from drchrono.views import patient
 from drchrono.views import doctor
 from drchrono.views import drchrono_setup
-from drchrono.views import drchrono_callback
 from drchrono.views import frontend
 
 admin.autodiscover()
@@ -16,19 +15,11 @@ admin.site.register(Appointment)
 
 urlpatterns = [ 
 
-    # Have DR Chrono contact our endpoint.
-    # url(r'^webhook-callback/', drchrono_callback.callback, name='webhook_callback'),
-
-    # Have DR Chrono API Verify our webhook
-    # url(r'^webhook-verify/', drchrono_callback.verify, name='webhook_verify'),
-
-
-
     # The frontend will get configuration settings from the server
     url(r'^frontend-client-settings/', frontend.frontend_client_settings, name='frontend_client_settings'),
 
     # Total Time of All Patients Doctor Has seen since the start of this system
-    url(r'^total-patient-wait-time/', doctor.total_patient_wait_time, name='total_patient_wait_time'),
+    url(r'^average-patient-wait-time/', doctor.average_patient_wait_time, name='average_patient_wait_time'),
 
     # Verify the Patient has an existing appointment
     url(r'^verify-patient-has-appointment/', appointment.verify_patient_has_appointment_view, name='verify_patient_has_appointment'),

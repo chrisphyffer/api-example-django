@@ -39,14 +39,16 @@ class DoctorWelcome(TemplateView):
         return kwargs
 
 @csrf_exempt
-def total_patient_wait_time(request):
+def average_patient_wait_time(request):
     all_appointments = Appointment.objects.all()
     total_wait_time = 0
 
     for appt in all_appointments:
         total_wait_time += appt.time_spent_waiting
 
+    
+
     return JsonResponse({
         'success' : True,
-        'total_wait_time' : total_wait_time
+        'average_patient_wait_time' : total_wait_time / all_appointments.count()
     })

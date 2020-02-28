@@ -171,13 +171,14 @@ def list_today_status(request):
     for appointment in appointments_list:
         appointment_list_status[appointment['id']] = appointment['status']
         if appointment['status'] in settings.DRCHRONO_VALID_SEEABLE_PATIENTS:
-            appointment_checkin = Appointment.objects.filter(appt_id=appointment['id'])
-            if not appointment_checkin.count():
+            appointment_checkin = Appointment.objects.filter(appt_id=appointment['id']).first()
+            if not appointment_checkin:
                 appointment_checkin = Appointment()
                 appointment_checkin.appt_id = appointment['id']
                 appointment_checkin.date_checked_in = timezone.now()
                 appointment_checkin.save()
-                checked_in_list[appointment['id']] = appointment_checkin.date_checked_in
+            
+            checked_in_list[appointment['id']] = appointment_checkin.date_checked_in
 
     return JsonResponse(
         {

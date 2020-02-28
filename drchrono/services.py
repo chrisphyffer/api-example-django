@@ -102,16 +102,17 @@ class AppointmentService:
                 if appointment['patient'] == patient['id'] and \
                     appointment['status'] in settings.DRCHRONO_VALID_APPOINTMENTS:
 
-                    if 'override_late' not in params or not params['override_late']:
-                        # If this appointment time is later than the Doctors Practice's
-                        # Late limit, then skip this appointment.
-                        naive = datetime.strptime (appointment['scheduled_time'], "%Y-%m-%dT%H:%M:%S")
-                        scheduled_time = pytz.utc.localize(naive)
-
-                        schedule_epoch = (scheduled_time - datetime(1970, 1, 1, tzinfo=pytz.utc)).total_seconds()
-                        late_time = time.time() - schedule_epoch
-                        if late_time > settings.PATIENT_LATE_CUTOFF_TIME*60:
-                            continue
+                    # No time to debug this extra functionality...
+                    #if 'override_late' not in params or not params['override_late']:
+                    #    # If this appointment time is later than the Doctors Practice's
+                    #    # Late limit, then skip this appointment.
+                    #    scheduled_time = datetime.strptime (appointment['scheduled_time'], "%Y-%m-%dT%H:%M:%S")
+                    #    schedule_epoch = (scheduled_time - datetime(1970, 1, 1)).total_seconds()
+                    #
+                    #    late_time = time.time() - schedule_epoch
+                    #    if late_time > settings.PATIENT_LATE_CUTOFF_TIME*60:
+                    #        print('wut? {} {}'.format(late_time, settings.PATIENT_LATE_CUTOFF_TIME))
+                    #        continue
                     
                     target_appointment = appointment
                     break

@@ -11,7 +11,7 @@
         <h3>Statistics</h3>
         Appointments Scheduled for Today : {{ appointments.length }}
         <br />
-        Combined Patient Wait Time: {{ total_patient_wait_time }} Seconds
+        Average Patient Wait Time: {{ average_patient_wait_time }} Seconds
       </div>
     </div>
 
@@ -108,7 +108,7 @@ export default {
       //// In the event the same patient is visiting the office,
       //// there will be no need to reconnect to the api and fetch patient information again.
       patient_list: {},
-      total_patient_wait_time: null,
+      average_patient_wait_time: null,
       APP_CONFIG: variables,
 
       wait_times : {}, // {'appt_id' : x_seconds }
@@ -119,7 +119,7 @@ export default {
   watch : {
     application_settings_loaded : function() {
       if(this.application_settings_loaded) {
-        this.get_total_patient_wait_time();
+        this.get_average_patient_wait_time();
 
         setInterval(() => {
           this.retrieve_appointments_status();
@@ -178,11 +178,11 @@ export default {
         })
     },
 
-    get_total_patient_wait_time : function() {
-      Axios.get(this.APP_CONFIG.API_URL + `/total-patient-wait-time/`)
+    get_average_patient_wait_time : function() {
+      Axios.get(this.APP_CONFIG.API_URL + `/average-patient-wait-time/`)
         .then(result => {
           if(result.data['success']) {
-            this.total_patient_wait_time = result.data['total_wait_time'];
+            this.average_patient_wait_time = result.data['average_patient_wait_time'];
           }
         })
     },
@@ -283,7 +283,7 @@ export default {
           });
 
           this.fetch_appointment(appointment.id);
-          this.get_total_patient_wait_time();
+          this.get_average_patient_wait_time();
         });
     },
 

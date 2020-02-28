@@ -134,7 +134,7 @@ Frontend Settings
 CORS_ORIGIN_ALLOW_ALL = True
 
 """
-DR Chrono Constants
+DR Chrono Doctor / Patient Rules, Settings
 The constants are used to determine whether an appointment is valid,
 and the system can allow an appointment to change it's status.
 For example: 

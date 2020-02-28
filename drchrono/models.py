@@ -26,6 +26,3 @@ class Appointment(models.Model):
             'date_checked_in' : self.date_checked_in,
             'time_spent_waiting' : self.time_spent_waiting
         }
-
-#class ChronoUpdates(models.Model):
-#    pass
