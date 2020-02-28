@@ -13,7 +13,6 @@
         Appointments Scheduled for Today : {{ appointments.length }}
         <br />
         Combined Patient Wait Time Since Start : {{ total_patient_wait_time }}
-        <button v-on:click="retrieve_appointments_status()">Refresh Status</button>
       </div>
     </div>
 
@@ -31,6 +30,7 @@
           <th scope="col">Time Waiting</th>
           <th scope="col">Check In</th>
           <th scope="col">Begin Session</th>
+          <th scope="col">Cancel Session</th>
         </tr>
       </thead>
       <tbody>
@@ -56,11 +56,17 @@
             </div>
           </td>
           <td>
-            <div  v-if="DRCHRONO_VALID_SEEABLE_PATIENTS.indexOf(appointment.status) != -1 &&
+            <div v-if="DRCHRONO_VALID_SEEABLE_PATIENTS.indexOf(appointment.status) != -1 &&
                         DRCHRONO_CLOSED_APPOINTMENTS.indexOf(appointment.status) == -1 ">
               <button class="btn btn-success"
                 v-on:click="begin_appointment(appointment)"
               >Begin Patient Session</button>
+            </div>
+          </td>
+          <td>
+            <div v-if="DRCHRONO_CLOSED_APPOINTMENTS.indexOf(appointment.status) == -1">
+              <button class="btn btn-danger" v-on:click="cancel_appointment(appointment)">
+                Cancel</button>
             </div>
           </td>
         </tr>
@@ -81,7 +87,7 @@ export default {
   data() {
     return {
       DRCHRONO_VALID_SEEABLE_PATIENTS: ['Arrived', 'Checked In', 'Checked In Online'],
-      DRCHRONO_CLOSED_APPOINTMENTS: ['Complete', 'In Session', 'In Room'],
+      DRCHRONO_CLOSED_APPOINTMENTS: ['Complete', 'In Session', 'In Room', 'Cancelled'],
       DRCHRONO_VALID_APPOINTMENTS: ['Confirmed'],
 
       appointments: [],
@@ -103,11 +109,40 @@ export default {
 
         setInterval(() => {
           this.retrieve_appointments_status();
-        }, 1000000000)
+        }, 5000)
       }
     }
   },
   methods: {
+    cancel_appointment : function(appointment, confirmed) {
+      if (!confirmed) {
+        this.$swal({
+          title: "Cancel Patient Session",
+          html:
+            `DANGER: Are you sure you want to cancel your appointment with` +
+            ` <strong>${appointment.patient.first_name} ` +
+            `${appointment.patient.last_name}</strong>?`,
+          confirmButtonText: "Yes Cancel",
+          cancelButtonText: "No",
+          showCancelButton: true,
+          showCloseButton: true
+        }).then(result => {
+          if (result.value) {
+            this.cancel_appointment(appointment, true);
+          }
+        });
+
+        return;
+      }
+
+      Axios.post(this.APP_CONFIG.API_URL + `/cancel-appointment/${appointment.id}/`)
+      .then(result => {
+          if(!result.data['success']) {
+            throw "Unable to cancel appointment.";
+          }
+          this.fetch_appointment(appointment.id);
+      })
+    },
     fetch_application_settings : function() {
       Axios.get(this.APP_CONFIG.API_URL + `/frontend-client-settings/`)
         .then(result => {

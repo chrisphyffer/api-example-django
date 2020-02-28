@@ -127,7 +127,8 @@ export default {
             this.patient_has_appointment = true;
           }
           else {
-            this.$swal({'title' : 'Could not verify if patient has an existing appointment...'})
+            var error = (result.data['error']) ? result.data['error'] : 'Could not verify if patient has an existing appointment...';
+            this.$swal({'title' : error })
           }
         })
 

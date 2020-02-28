@@ -8,8 +8,3 @@ def frontend_client_settings(request):
         'DRCHRONO_CLOSED_APPOINTMENTS' : settings.DRCHRONO_CLOSED_APPOINTMENTS,
         'DRCHRONO_VALID_APPOINTMENTS' : settings.DRCHRONO_VALID_APPOINTMENTS
     })
-
-def check_for_updates(request):
-    return JsonResponse({
-        'success' : True
-    })

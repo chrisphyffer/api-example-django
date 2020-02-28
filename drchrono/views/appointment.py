@@ -13,12 +13,43 @@ from drchrono.services import ChronoOauth
 from drchrono.services import PatientService
 from drchrono.services import AppointmentService
 
+
+@csrf_exempt
+def cancel_appointment(request, appointment_id):
+    """
+    Cancel the Doctor / Patient Appointment.
+    """
+    api_appt = AppointmentEndpoint(ChronoOauth.get_token())
+    api_appt.update(appointment_id, {'status' : 'Cancelled' })
+
+    return JsonResponse({
+            'success' : True
+        })
+
+@csrf_exempt
+def begin_doctor_session(request, appointment_id):
+    """
+    Begin the Patient's appointment with the doctor.
+    """
+    api_appt = AppointmentEndpoint(ChronoOauth.get_token())
+    api_appt.update(appointment_id, {'status' : 'In Session' })
+
+    appointment = Appointment.objects.filter(appt_id=appointment_id)
+    if appointment.count():
+        appointment = appointment[0]
+        appointment.set_time_spent_waiting()
+        appointment.save()
+
+    return JsonResponse({
+            'success' : True
+        }
+    )
+
 @csrf_exempt
 def verify_patient_has_appointment_view(request):
     """
     A view wrapper for AppointmentService.verify_patient_has_appointment(request)
     """
-
     json_post = json.loads(request.body)
     target_appointment = AppointmentService.verify_patient_has_appointment(params=json_post)
     if 'error' in target_appointment:
@@ -60,7 +91,6 @@ def check_in_patient(request):
 
     # Verify if the patient has an appointment today.
     # This will return an appointment object and we can work off that.
-    
     target_appointment = AppointmentService.verify_patient_has_appointment(params=json_post)
     if 'error' in target_appointment:
         return JsonResponse({
@@ -74,12 +104,8 @@ def check_in_patient(request):
         if demographic_field in json_post:
             patient_params[demographic_field] = json_post[demographic_field]
 
-    print(patient_params)
-    #return JsonResponse({})
     api_patient = PatientEndpoint(ChronoOauth.get_token())
     result = api_patient.update(id=target_appointment['patient'], params=patient_params)
-    print(result)
-    #return JsonResponse({})
 
     # Update our Appointment Status.
     try:
@@ -177,30 +203,10 @@ def fetch(request, appointment_id):
             })
 
     appt_db = Appointment.objects.filter(appt_id=appointment_id).first()
-    if appointment:
+    if appointment and appt_db:
         appointment['date_checked_in'] = appt_db.date_checked_in
 
     return JsonResponse({
             'success' : True,
             'appointment' : appointment
         })
-
-
-@csrf_exempt
-def begin_doctor_session(request, appointment_id):
-    """
-    Begin the Patient's appointment with the doctor.
-    """
-    api_appt = AppointmentEndpoint(ChronoOauth.get_token())
-    api_appt.update(appointment_id, {'status' : 'In Session' })
-
-    appointment = Appointment.objects.filter(appt_id=appointment_id)
-    if appointment.count():
-        appointment = appointment[0]
-        appointment.set_time_spent_waiting()
-        appointment.save()
-
-    return JsonResponse({
-            'success' : True
-        }
-    )

@@ -1,5 +1,6 @@
 from datetime import datetime
 from django.conf import settings
+from django.utils import timezone
 from social_django.models import UserSocialAuth
 from drchrono.endpoints import PatientEndpoint
 from drchrono.endpoints import AppointmentEndpoint
@@ -78,8 +79,8 @@ class AppointmentService:
 
         if not target_appointment:
             return {
-                'error' : 'Were sorry, it appears you haven\'t confirmed an appointment with us today, '+\
-                        'you have already checked in, rescheduled, etc'
+                'error' : 'Were sorry, it appears you have either: not confirmed an appointment with us today, '+\
+                        'have already checked in, rescheduled, etc'
             }
 
         return target_appointment

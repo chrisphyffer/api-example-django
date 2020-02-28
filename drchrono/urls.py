@@ -22,6 +22,8 @@ urlpatterns = [
     # Have DR Chrono API Verify our webhook
     # url(r'^webhook-verify/', drchrono_callback.verify, name='webhook_verify'),
 
+
+
     # The frontend will get configuration settings from the server
     url(r'^frontend-client-settings/', frontend.frontend_client_settings, name='frontend_client_settings'),
 
@@ -36,6 +38,9 @@ urlpatterns = [
 
     # Look up Patient Information by ID
     url(r'^patient/(?P<patient_id>[0-9]+)/$', patient.fetch, name='fetch_patient'),
+
+    # Cancel the appointment.
+    url(r'^cancel-appointment/(?P<appointment_id>[\w\-]+)/$', appointment.cancel_appointment, name='cancel_appointment'),
 
     # Get the Appointment Status Only - For Refreshing the Frontend Appointments list.
     url(r'^appointments-status/$', appointment.list_today_status, name='appointment_list_status'),
