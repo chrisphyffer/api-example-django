@@ -3,10 +3,10 @@
     <br />
   <ul class="nav nav-pills nav-justified">
     <li class="nav-item">
-      <button class="btn btn-info"><router-link to="/doctor-dashboard">Doctor Dashboard</router-link></button>
+      <router-link to="/doctor-dashboard"><button class="btn btn-info">Doctor Dashboard</button></router-link>
     </li>
     <li class="nav-item">
-      <button class="btn btn-info"><router-link to="/patient-kiosk">Patient Kiosk</router-link></button>
+      <router-link to="/patient-kiosk"><button class="btn btn-info">Patient Kiosk</button></router-link>
     </li>
   </ul>
     <router-view />

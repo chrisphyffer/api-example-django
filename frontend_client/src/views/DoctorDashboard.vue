@@ -8,11 +8,10 @@
       </div>
 
       <div class="col-6 text-right">
-        Statistics:
-        <br />
+        <h3>Statistics</h3>
         Appointments Scheduled for Today : {{ appointments.length }}
         <br />
-        Combined Patient Wait Time Since Start : {{ total_patient_wait_time }}
+        Combined Patient Wait Time: {{ total_patient_wait_time }} Seconds
       </div>
     </div>
 
@@ -23,6 +22,7 @@
       <thead>
         <tr>
           <th scope="col">Scheduled For<br /><span style="font-size:12px;">(Record Updated At)</span></th>
+          <th scope="col">Photo</th>
           <th scope="col">First Name</th>
           <th scope="col">Last Name</th>
           <th scope="col">Phone Number</th>
@@ -35,9 +35,16 @@
       </thead>
       <tbody>
         <tr v-for="appointment in appointments" v-bind:key="appointment.id">
-          <td>{{ appointment.scheduled_time }}<br /><span style="font-size:12px;">{{ Date.parse(appointment.updated_at) }}</span></td>
+          <td>{{ appointment.scheduled_time }}<br /><span style="font-size:12px;">{{ Date.parse(appointment.updated_at) }}</span><br />
+            <span style="font-size:12px; color: #FF0000" v-if="late_times[appointment.id] > PATIENT_LATE_CUTOFF_TIME">
+              Patient is over the late limit ({{ PATIENT_LATE_CUTOFF_TIME }} seconds)
+            </span></td>
           <td v-if="typeof(appointment.patient) != 'object'" colspan="3">
             Loading Patient Information...
+          </td>
+          <td v-if="typeof(appointment.patient) == 'object'">
+              <img :src="appointment.patient.patient_photo" 
+                style="width:50px; border-radius:10px;" />
           </td>
           <td v-if="typeof(appointment.patient) == 'object'">{{ appointment.patient.first_name }}</td>
           <td v-if="typeof(appointment.patient) == 'object'">{{ appointment.patient.last_name }}</td>
@@ -51,8 +58,13 @@
                         DRCHRONO_CLOSED_APPOINTMENTS.indexOf(appointment.status) == -1 &&
                         DRCHRONO_VALID_APPOINTMENTS.indexOf(appointment.status) != -1">
               <button class="btn btn-success"
-                v-on:click="check_in_patient(appointment.patient, appointment.id)"
+                v-on:click="check_in_patient(appointment.patient, appointment.id, true)"
               >Check In Patient</button>
+            </div>
+            <div v-if="typeof(appointment.patient) == 'object' &&
+            DRCHRONO_VALID_SEEABLE_PATIENTS.indexOf(appointment.status) != -1">
+            Checked in at:
+              {{ appointment.date_checked_in }}
             </div>
           </td>
           <td>
@@ -86,9 +98,10 @@ import error_handler from "@/error_handler.js";
 export default {
   data() {
     return {
-      DRCHRONO_VALID_SEEABLE_PATIENTS: ['Arrived', 'Checked In', 'Checked In Online'],
-      DRCHRONO_CLOSED_APPOINTMENTS: ['Complete', 'In Session', 'In Room', 'Cancelled'],
-      DRCHRONO_VALID_APPOINTMENTS: ['Confirmed'],
+      DRCHRONO_VALID_SEEABLE_PATIENTS: null,
+      DRCHRONO_CLOSED_APPOINTMENTS: null,
+      DRCHRONO_VALID_APPOINTMENTS: null,
+      PATIENT_LATE_CUTOFF_TIME: null,
 
       appointments: [],
 
@@ -99,6 +112,7 @@ export default {
       APP_CONFIG: variables,
 
       wait_times : {}, // {'appt_id' : x_seconds }
+      late_times : {}, // {'appt_id' : x_seconds }
       application_settings_loaded : false
     };
   },
@@ -150,6 +164,7 @@ export default {
             this.DRCHRONO_VALID_SEEABLE_PATIENTS = result.data['DRCHRONO_VALID_SEEABLE_PATIENTS'];
             this.DRCHRONO_CLOSED_APPOINTMENTS = result.data['DRCHRONO_CLOSED_APPOINTMENTS'];
             this.DRCHRONO_VALID_APPOINTMENTS = result.data['DRCHRONO_VALID_APPOINTMENTS'];
+            this.PATIENT_LATE_CUTOFF_TIME = result.data['PATIENT_LATE_CUTOFF_TIME'];
             this.application_settings_loaded = true;
           } else {
             throw "Unable to fetch Application Settings from Django Server.";
@@ -174,28 +189,55 @@ export default {
     
     begin_timer: function() {
       var appointment_updated_date = false;
+      var appointment_scheduled_date = false;
       var current_date = false;
       var wait_time = false;
+      var late_time = false;
+      var checked_in = false;
+      var valid_appointment = false;
       setInterval(() => {
         for(var appt in this.appointments) {
-          if(this.DRCHRONO_VALID_SEEABLE_PATIENTS.indexOf(this.appointments[appt].status) == -1)
-            continue;
-          
-          if(!this.appointments[appt].date_checked_in)
-            continue;
 
-          appointment_updated_date = Math.floor(new Date(this.appointments[appt].date_checked_in).getTime());
-          current_date = new Date().getTime();
+          checked_in = false;
+          valid_appointment = false;
 
-          appointment_updated_date /= 1000
-          current_date /= 1000
-          wait_time = Math.floor(current_date - appointment_updated_date)
-          
-          if(!this.wait_times[this.appointments[appt].id]) {
-            this.$set(this.wait_times, this.appointments[appt].id, 0);
+          if(this.appointments[appt].date_checked_in && 
+          this.DRCHRONO_VALID_SEEABLE_PATIENTS.indexOf(this.appointments[appt].status) != -1) {
+            checked_in = true;
+          }
+          else if(this.DRCHRONO_VALID_APPOINTMENTS.indexOf(this.appointments[appt].status) != -1) {
+            valid_appointment = true;
+          }
+          else {
+            continue;
           }
 
-          this.$set(this.wait_times, this.appointments[appt].id, wait_time);
+          current_date = new Date().getTime();
+          current_date /= 1000
+
+          if(checked_in) {
+            appointment_updated_date = Math.floor(new Date(this.appointments[appt].date_checked_in).getTime());
+            appointment_updated_date /= 1000;
+            wait_time = Math.floor(current_date - appointment_updated_date)
+
+            if(!this.wait_times[this.appointments[appt].id]) {
+              this.$set(this.wait_times, this.appointments[appt].id, 0);
+            }
+
+            this.$set(this.wait_times, this.appointments[appt].id, wait_time);
+          }
+
+          else if(valid_appointment) {
+            appointment_scheduled_date = Math.floor(new Date(this.appointments[appt].scheduled_time).getTime());
+            appointment_scheduled_date /= 1000
+            late_time = Math.floor(current_date - appointment_scheduled_date)
+
+            if(!this.late_times[this.appointments[appt].id]) {
+              this.$set(this.late_times, this.appointments[appt].id, 0);
+            }
+
+            this.$set(this.late_times, this.appointments[appt].id, late_time);
+          }
         }
       }, 1000)
     },
@@ -276,9 +318,14 @@ export default {
 
           // Match Corresponding Statuses
           for(var appt in this.appointments) {
-            for(var appt_id in result.data['appointments']) {
+            for(var appt_id in result.data['status']) {
               if(this.appointments[appt]['id'] == appt_id) {
-                this.appointments[appt]['status'] = result.data['appointments'][appt_id]
+                this.appointments[appt]['status'] = result.data['status'][appt_id]
+              }
+            }
+            for(appt_id in result.data['date_checked_in']) {
+              if(this.appointments[appt]['id'] == appt_id) {
+                this.appointments[appt]['date_checked_in'] = result.data['date_checked_in'][appt_id]
               }
             }
           }
@@ -342,11 +389,13 @@ export default {
       });
     },
 
-    check_in_patient: function(patient, appt_id) {
+    check_in_patient: function(patient, appt_id, override_late) {
       Axios.post(
         this.APP_CONFIG.API_URL + "/check-in-patient/",
         {
-          id : patient.id
+          patient_id : patient.id,
+          appointment_id : appt_id,
+          override_late : override_late
         },
         {
             headers : { 'Content-Type': 'application/json' }

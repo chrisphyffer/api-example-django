@@ -65,25 +65,13 @@ def verify_patient_has_appointment_view(request):
 def check_in_patient(request):
     """
     If our Patient has a scheduled appointment, we will look up this patient
-    from our list of appointments and change their status to any key listed in the
-    `DRCHRONO_VALID_SEEABLE_PATIENTS` settings. See the Django App settings.py
+    from our list of appointments and change their status to `Checked In`
 
     Feature: 
     The Appointment that is closest to the actual time will be chosen.
-    Appointments X Seconds OLDER than the current time will be pruned
-    and flagged as `No Show`.
 
     If patient is not new...then the system will reject since the patient does not have
     an appointment. 
-
-    NOTE : 
-    This patient could have multiple times scheduled throuhgout the same day.
-    A Patient Could Arrive Late. 
-        > An appointment may automatically be cancelled if the patient is more than X minutes late.
-        > If the patient has multiple meetings, and misses the first meeting (due to > x minutes), 
-            that first meeting is cancelled, and they must wait for their next meeting.
-        > If the patient is EARLY to their scheduled meeting, the wait time will not start until
-            the patient's Scheduled time.
     """
 
     # We must verify the patient's name and demographics.
@@ -105,7 +93,7 @@ def check_in_patient(request):
             patient_params[demographic_field] = json_post[demographic_field]
 
     api_patient = PatientEndpoint(ChronoOauth.get_token())
-    result = api_patient.update(id=target_appointment['patient'], params=patient_params)
+    api_patient.update(id=target_appointment['patient'], params=patient_params)
 
     # Update our Appointment Status.
     try:
@@ -145,15 +133,13 @@ def list_today(request):
         appointments_list = list(appointments_data)
     except Exception, e:
         print(e)
-        return JsonResponse(
-            {
+        return JsonResponse({
                 'error' : 'D))0000MNN Could not fetch Appointments List.'
             })
 
     AppointmentService.synchronize_appointments_db(appointments_list)
 
-    return JsonResponse(
-        {
+    return JsonResponse({
             'success' : True, 
             'appointments' : list(appointments_list)
         })
@@ -162,6 +148,8 @@ def list_today(request):
 def list_today_status(request):
     """
     List Today's Appointment Statuses only.
+    Even though the API gets the entire Appointment Data,
+    Down the road, there will be an opportunity to get partial data.
     """
     api_appt = AppointmentEndpoint(ChronoOauth.get_token())
     current_date = datetime.now().strftime("%Y-%m-%d")
@@ -179,13 +167,23 @@ def list_today_status(request):
 
     # We just need the status from the appointments list.
     appointment_list_status = {}
+    checked_in_list = {}
     for appointment in appointments_list:
         appointment_list_status[appointment['id']] = appointment['status']
+        if appointment['status'] in settings.DRCHRONO_VALID_SEEABLE_PATIENTS:
+            appointment_checkin = Appointment.objects.filter(appt_id=appointment['id'])
+            if not appointment_checkin.count():
+                appointment_checkin = Appointment()
+                appointment_checkin.appt_id = appointment['id']
+                appointment_checkin.date_checked_in = timezone.now()
+                appointment_checkin.save()
+                checked_in_list[appointment['id']] = appointment_checkin.date_checked_in
 
     return JsonResponse(
         {
             'success' : True, 
-            'appointments' : appointment_list_status
+            'status' : appointment_list_status,
+            'date_checked_in' : checked_in_list
         })
 
 @csrf_exempt

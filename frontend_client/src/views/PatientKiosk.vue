@@ -19,7 +19,7 @@
         <select v-model="gender">
           <option>Male</option>
           <option>Female</option>
-          <option>Unknown - Decline to state</option>
+          <option value="UNK">Unknown - Decline to state</option>
         </select>
       </label><br />
       <label>

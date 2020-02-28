@@ -142,8 +142,13 @@ For example:
 - Can a doctor begin a session on an appointment?
 """
 DRCHRONO_VALID_SEEABLE_PATIENTS = ['Arrived', 'Checked In', 'Checked In Online']
-DRCHRONO_CLOSED_APPOINTMENTS = ['Complete', 'In Session', 'In Room']
+DRCHRONO_CLOSED_APPOINTMENTS = ['Complete', 'In Session', 'In Room', 'Cancelled']
 DRCHRONO_VALID_APPOINTMENTS = ['Confirmed']
+
+"""
+Doctor's Practice Settings
+"""
+PATIENT_LATE_CUTOFF_TIME = 20 #In Minutes.
 
 
 LOGGING = {
