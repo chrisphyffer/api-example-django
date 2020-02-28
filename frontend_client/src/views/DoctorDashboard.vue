@@ -4,7 +4,7 @@
     <br />
     <div class="row">
       <div class="col-6">
-        <h1>Welcome Dr. Chrono</h1>
+        <h1>Welcome Dr. Chrono</h1><br />
       </div>
 
       <div class="col-6 text-right">
@@ -13,6 +13,7 @@
         Appointments Scheduled for Today : {{ appointments.length }}
         <br />
         Combined Patient Wait Time Since Start : {{ total_patient_wait_time }}
+        <button v-on:click="retrieve_appointments_status()">Refresh Status</button>
       </div>
     </div>
 
@@ -46,17 +47,17 @@
           
           <td >
             <div v-if="typeof(appointment.patient) == 'object' && 
-                      VALID_SEEABLE_PATIENTS.indexOf(appointment.status) == -1 &&
-                        CLOSED_APPOINTMENTS.indexOf(appointment.status) == -1 &&
-                        VALID_PATIENTS.indexOf(appointment.status) != -1">
+                      DRCHRONO_VALID_SEEABLE_PATIENTS.indexOf(appointment.status) == -1 &&
+                        DRCHRONO_CLOSED_APPOINTMENTS.indexOf(appointment.status) == -1 &&
+                        DRCHRONO_VALID_APPOINTMENTS.indexOf(appointment.status) != -1">
               <button class="btn btn-success"
                 v-on:click="check_in_patient(appointment.patient, appointment.id)"
               >Check In Patient</button>
             </div>
           </td>
           <td>
-            <div  v-if="VALID_SEEABLE_PATIENTS.indexOf(appointment.status) != -1 &&
-                        CLOSED_APPOINTMENTS.indexOf(appointment.status) == -1 ">
+            <div  v-if="DRCHRONO_VALID_SEEABLE_PATIENTS.indexOf(appointment.status) != -1 &&
+                        DRCHRONO_CLOSED_APPOINTMENTS.indexOf(appointment.status) == -1 ">
               <button class="btn btn-success"
                 v-on:click="begin_appointment(appointment)"
               >Begin Patient Session</button>
@@ -79,38 +80,70 @@ import error_handler from "@/error_handler.js";
 export default {
   data() {
     return {
-      VALID_SEEABLE_PATIENTS: ['Arrived', 'Checked In', 'Checked In Online'],
-      CLOSED_APPOINTMENTS: ['Complete', 'In Session', 'In Room'],
-      VALID_PATIENTS: ['Confirmed'],
+      DRCHRONO_VALID_SEEABLE_PATIENTS: ['Arrived', 'Checked In', 'Checked In Online'],
+      DRCHRONO_CLOSED_APPOINTMENTS: ['Complete', 'In Session', 'In Room'],
+      DRCHRONO_VALID_APPOINTMENTS: ['Confirmed'],
 
       appointments: [],
 
       //// In the event the same patient is visiting the office,
-      //// there will be no need to reconnect to the api and fetch again.
+      //// there will be no need to reconnect to the api and fetch patient information again.
       patient_list: {},
-      total_patient_wait_time: 1000000, // In seconds
+      total_patient_wait_time: null,
       APP_CONFIG: variables,
 
-      wait_times : {}, //// {'appt_id' : x_seconds }
+      wait_times : {}, // {'appt_id' : x_seconds }
+      application_settings_loaded : false
     };
   },
+  watch : {
+    application_settings_loaded : function() {
+      if(this.application_settings_loaded) {
+        this.get_total_patient_wait_time();
+
+        setInterval(() => {
+          this.retrieve_appointments_status();
+        }, 1000000000)
+      }
+    }
+  },
   methods: {
+    fetch_application_settings : function() {
+      Axios.get(this.APP_CONFIG.API_URL + `/frontend-client-settings/`)
+        .then(result => {
+          if(result.data['success']) {
+            this.DRCHRONO_VALID_SEEABLE_PATIENTS = result.data['DRCHRONO_VALID_SEEABLE_PATIENTS'];
+            this.DRCHRONO_CLOSED_APPOINTMENTS = result.data['DRCHRONO_CLOSED_APPOINTMENTS'];
+            this.DRCHRONO_VALID_APPOINTMENTS = result.data['DRCHRONO_VALID_APPOINTMENTS'];
+            this.application_settings_loaded = true;
+          } else {
+            throw "Unable to fetch Application Settings from Django Server.";
+          }
+
+        }).catch(error => {
+            this.$swal({
+              title : 'Error fetching Client Settings',
+              html : error
+            })
+        })
+    },
+
     get_total_patient_wait_time : function() {
- 
-      Axios.get(this.APP_CONFIG.API_URL + `/total-wait-time-since-epoch/`)
+      Axios.get(this.APP_CONFIG.API_URL + `/total-patient-wait-time/`)
         .then(result => {
           if(result.data['success']) {
             this.total_patient_wait_time = result.data['total_wait_time'];
           }
         })
     },
+    
     begin_timer: function() {
       var appointment_updated_date = false;
       var current_date = false;
       var wait_time = false;
       setInterval(() => {
         for(var appt in this.appointments) {
-          if(this.VALID_SEEABLE_PATIENTS.indexOf(this.appointments[appt].status) == -1)
+          if(this.DRCHRONO_VALID_SEEABLE_PATIENTS.indexOf(this.appointments[appt].status) == -1)
             continue;
           
           if(!this.appointments[appt].date_checked_in)
@@ -132,6 +165,7 @@ export default {
       }, 1000)
     },
     begin_appointment: function(appointment, confirmed) {
+
       //// Confirm with the Doctor if this patient is to be seen.
       if (!confirmed) {
         this.$swal({
@@ -153,7 +187,6 @@ export default {
       }
 
       //// Let us now begin our Patient's Appointment.
-
       Axios.post(
         this.APP_CONFIG.API_URL + `/begin-appointment/${appointment.id}/`,
         {} // Parameters
@@ -163,11 +196,7 @@ export default {
 
           if (!result.data["success"]) {
             var title = "";
-            error_handler.run(this.$swal, {
-              title: "An Error Occured..",
-              description: "Something wrong happened."
-            });
-            return;
+            throw result.data["error"]
           }
 
           this.$swal({
@@ -178,12 +207,7 @@ export default {
 
           this.fetch_appointment(appointment.id);
           this.get_total_patient_wait_time();
-        })
-        .catch(error => {
-          console.log(error);
         });
-
-        
     },
 
     fetch_appointment : function(appointment_id) {
@@ -199,15 +223,38 @@ export default {
             break;
           }
         }
-      })
-      .catch(error => {
-        console.log(error);
-      })
+      });
     },
 
-    retrieve_appointments_list: function() {
+    retrieve_appointments_status: function(param) {
       Axios.post(
-        this.APP_CONFIG.API_URL + "/appointments/"
+        this.APP_CONFIG.API_URL + '/appointments-status/'
+      )
+        .then(result => {
+
+          if (!result.data["success"]) {
+            error_handler.run(this.$swal, {
+              title: "",
+              description: (result.data['error']) ? result.data['error'] : "Something wrong happened."})
+            return;
+          }
+
+          // Match Corresponding Statuses
+          for(var appt in this.appointments) {
+            for(var appt_id in result.data['appointments']) {
+              if(this.appointments[appt]['id'] == appt_id) {
+                this.appointments[appt]['status'] = result.data['appointments'][appt_id]
+              }
+            }
+          }
+
+        });
+    },
+
+    retrieve_appointments_list: function(param) {
+
+      Axios.post(
+        this.APP_CONFIG.API_URL + '/appointments/'
       )
         .then(result => {
 
@@ -220,10 +267,16 @@ export default {
 
           this.appointments = result.data['appointments'];
 
+          // Match corresponding patients:
           for(var appt in this.appointments) {
+            if (this.patient_list[this.appointments.patient]) {
+              this.appointments[result.appt].patient = this.patient_list[this.appointments.patient];
+              continue;
+            }
+            
             this.look_up_patient(appt).then(result => {
               this.appointments[result.appt].patient = result.patient;
-              this.patient_list[this.appointments.patient] = result.patient;
+              this.patient_list[result.patient.id] = result.patient;
             }).catch(error => {
                 error_handler.run(this.$swal, {
                   title: "Error Retrieving Patient",
@@ -232,9 +285,6 @@ export default {
           }
 
           this.begin_timer();
-        })
-        .catch(error => {
-          console.log(error);
         });
     },
 
@@ -258,8 +308,6 @@ export default {
     },
 
     check_in_patient: function(patient, appt_id) {
-      console.log(patient);
-      console.log(patient.id, patient.first_name, patient.last_name);
       Axios.post(
         this.APP_CONFIG.API_URL + "/check-in-patient/",
         {
@@ -295,9 +343,8 @@ export default {
     }
   },
   mounted() {
-
-    this.get_total_patient_wait_time();
     this.retrieve_appointments_list();
+    this.fetch_application_settings();
     
   }
 };

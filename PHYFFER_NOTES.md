@@ -17,3 +17,11 @@ Improvements:
 Read the comments always.
 Play around with the API
 Scaffold the views to get a ui prototype working immediately with fake data.
+PSEUDOCODE first.
+No defensive coding yet.
+
+NOTES:
+Avoided storing Patient information locally - EHR/HIIPA, avoid storing locally as much as possible?
+
+NOTES on Chrono end :
+It appears that the `patient chart` api endpoint is missing from the docs.

@@ -6,15 +6,12 @@ from drchrono.utils.exceptions import Forbidden
 from drchrono.utils.exceptions import NotFound
 from drchrono.utils.exceptions import Conflict
 
-
 ERROR_CODES = {
     403: Forbidden,
     404: NotFound,
     409: Conflict,
 }
 
-
-# TODO: this API abstraction is included for your convenience. If you don't like it, feel free to change it.
 class BaseEndpoint(object):
     """
     A python wrapper for the basic rules of the drchrono API endpoints.
@@ -184,7 +181,9 @@ class PatientEndpoint(BaseEndpoint):
         return super(PatientEndpoint, self).fetch(id=id, params=params, **kwargs)
 
     def update(self, id, params, **kwargs):
-        return super(PatientEndpoint, self)
+        if not id:
+            raise Exception("The Patient ID is required for update.")
+        return super(PatientEndpoint, self).update(id=id, data=params, **kwargs)
 
 
 class AppointmentEndpoint(BaseEndpoint):
@@ -207,6 +206,8 @@ class AppointmentEndpoint(BaseEndpoint):
         return super(AppointmentEndpoint, self).list(params, **kwargs)
 
     def update(self, id, params, **kwargs):
+        if not id:
+            raise Exception("The Appointment ID is required for update.")
         return super(AppointmentEndpoint, self).update(id=id, data=params, **kwargs)
 
     def fetch(self, id, params=None, **kwargs):

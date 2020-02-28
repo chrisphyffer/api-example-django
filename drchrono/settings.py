@@ -41,6 +41,7 @@ INSTALLED_APPS = (
     'social_django',
     'rest_framework',
     'corsheaders',
+    'sslserver'
 )
 
 MIDDLEWARE_CLASSES = (
@@ -124,14 +125,25 @@ LOGIN_URL = 'login/drchrono'
 
 SHELL_PLUS = "ipython"
 
+# The webhook must be in bytes to be processed by your hashing algorithm
+WEBHOOK_SECRET_TOKEN = bytearray("bit5~oy/^22}t,D@&JD;n}Z^}wVZ$", 'utf-8')
 
 """
-Developement Purposes
+Frontend Settings
 """
 CORS_ORIGIN_ALLOW_ALL = True
 
-# The webhook must be in bytes to be processed by your hashing algorithm
-WEBHOOK_SECRET_TOKEN = bytearray("bit5~oy/^22}t,D@&JD;n}Z^}wVZ$", 'utf-8')
+"""
+DR Chrono Constants
+The constants are used to determine whether an appointment is valid,
+and the system can allow an appointment to change it's status.
+For example: 
+- Is the appointment valid for a patient to check in?
+- Can a doctor begin a session on an appointment?
+"""
+DRCHRONO_VALID_SEEABLE_PATIENTS = ['Arrived', 'Checked In', 'Checked In Online']
+DRCHRONO_CLOSED_APPOINTMENTS = ['Complete', 'In Session', 'In Room']
+DRCHRONO_VALID_APPOINTMENTS = ['Confirmed']
 
 
 LOGGING = {
